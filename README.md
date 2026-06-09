@@ -11,7 +11,7 @@ This repository showcases Oracle SecureFiles deduplication in Oracle Autonomous 
 
 ## Overview
 
-The first script, `basic_deduplication.sql`, creates two SecureFiles tables with the same data: one keeps duplicates, one deduplicates them, then compares LOB segment storage using `DBMS_SECUREFILES.GET_LOB_DEDUPLICATION_RATIO`.
+The first script, `basic_deduplication.sql`, creates two SecureFiles tables with the same data: one keeps duplicates, one deduplicates them, then compares LOB segment storage.
 
 The second script, `bank_pdfs_deduplication.sql`, uses generated bank-statement PDFs to show a more realistic pattern:
 
@@ -37,7 +37,6 @@ The fourth script, `archive_current_partition_to_object_storage.sql`, archives t
 
 - `bank_pdfs_deduplication.sql`  
   SQL-only demo using PDF-like BLOB payloads.
-
 
 - `create_hybrid_bank_statement_table.sql`  
   Creates a hybrid partitioned metadata table for cold Object Storage partitions and a current-month internal SecureFiles BLOB table with deduplication.
