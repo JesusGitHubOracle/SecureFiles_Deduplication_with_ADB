@@ -10,16 +10,19 @@ This repository contains scripts showcasing how to use Oracle SecureFiles dedupl
 
 ## Overview
 
-The first script,  basic_deduplication.sql,  creates two SecureFiles tables with the same data: one keeps duplicates, one deduplicates them, then compares LOB segment storage using `DBMS_SECUREFILES.GET_LOB_DEDUPLICATION_RATIO`.
+The first script, `basic_deduplication.sql`, creates two SecureFiles tables with the same data: one keeps duplicates, one deduplicates them, then compares LOB segment storage using `DBMS_SECUREFILES.GET_LOB_DEDUPLICATION_RATIO`.
 
-The second script, bank_pdfs_deduplication.sql,   uses generated bank-statement PDFs to show a more realistic pattern:
+The second script, `bank_pdfs_deduplication.sql`, uses generated bank-statement PDFs to show a more realistic pattern:
 
 - Multiple exact copies of the same PDF statement are stored for different business purposes.
 - A `KEEP_DUPLICATES` table stores every PDF copy separately.
 - A `DEDUPLICATE` table stores duplicate SecureFiles LOB content once.
 - Segment allocation is compared to show the actual storage savings.
 
-The third and fourth scripts showcase how to implement a monthly archiving policy using external partition tables in  external partitions on  OCI Object Storage
+The third script, `create_hybrid_bank_statement_table.sql`, creates a hybrid partitioned metadata table with cold monthly partitions in OCI Object Storage and a current-month internal SecureFiles BLOB table.
+
+The fourth script, `archive_current_partition_to_object_storage.sql`, archives the current internal month to Object Storage and rebuilds the hybrid table so the archived month becomes an external partition.
+
 ## Files
 
 - `basic_deduplication.sql`  
@@ -117,4 +120,3 @@ The archive script writes PDFs and manifest files to OCI Object Storage, then re
 - External Object Storage partitions store metadata and object URIs, not database SecureFiles BLOBs.
 - Raw PDFs in Object Storage are not directly queryable as table rows; the demo uses CSV manifests to represent Object Storage PDFs in the hybrid metadata table.
 - Always verify archived Object Storage files and manifest row counts before purging the internal SecureFiles partition.
-
