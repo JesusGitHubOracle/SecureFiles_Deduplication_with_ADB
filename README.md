@@ -1,6 +1,6 @@
 # SecureFiles Deduplication with Oracle Autonomous Database
 
-This repository showcases how to use Oracle SecureFiles deduplication for storing unstructured data in Oracle Autonomous Database. It also shows how to store PDF documents on external partitions for less query offload and archiving.
+This repository showcases Oracle SecureFiles deduplication in Oracle Autonomous Database. It also shows how to store unstructured data on external partitions for query offload and archiving.
 
 ## References
 
