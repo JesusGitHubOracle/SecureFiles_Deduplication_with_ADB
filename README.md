@@ -1,12 +1,13 @@
 # SecureFiles Deduplication with Oracle Autonomous Database
 
-This repository contains scripts showcasing how to use Oracle SecureFiles deduplication with bank-statement PDF workloads in Oracle Autonomous Database.
+This repository showcases how to use Oracle SecureFiles deduplication for storing unstructured data in Oracle Autonomous Database. It also shows how to store PDF documents on external partitions for less query offload and archiving.
 
 ## References
 
 - [Overview of Oracle SecureFiles](https://www.oracle.com/database/technologies/securefiles.html)
 - [SecureFiles Documentation](https://docs.oracle.com/en/database/oracle/oracle-database/19/adlob/using-oracle-LOBs-storage.html)
 - [SecureFiles Deduplication Examples](https://docs.oracle.com/en/database/oracle/oracle-database/26/adlob/creating-new-LOB-column.html)
+- [Query Hybrid Partitioned Data](https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/query-hybrid-partition.html)
 
 ## Overview
 
@@ -28,14 +29,15 @@ The fourth script, `archive_current_partition_to_object_storage.sql`, archives t
 - `basic_deduplication.sql`  
   Minimal SecureFiles deduplication example using synthetic LOB data.
 
-- `bank_pdfs_deduplication.sql`  
-  SQL-only demo using PDF-like BLOB payloads.
-
 - `generate_bank_pdfs.py`  
   Generates valid synthetic PDF bank statements outside the database.
 
 - `load_bank_pdfs_to_adb.py`  
   Loads generated PDFs into Autonomous Database SecureFiles BLOB tables.
+
+- `bank_pdfs_deduplication.sql`  
+  SQL-only demo using PDF-like BLOB payloads.
+
 
 - `create_hybrid_bank_statement_table.sql`  
   Creates a hybrid partitioned metadata table for cold Object Storage partitions and a current-month internal SecureFiles BLOB table with deduplication.
