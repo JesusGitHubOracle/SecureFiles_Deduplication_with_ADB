@@ -1,6 +1,6 @@
 # SecureFiles Deduplication with Oracle Autonomous Database
 
-This demo shows how to use Oracle SecureFiles deduplication with bank-statement PDF workloads in Oracle Autonomous Database.
+This repository contains scripts showcasing how to use Oracle SecureFiles deduplication with bank-statement PDF workloads in Oracle Autonomous Database.
 
 ## References
 
@@ -8,17 +8,18 @@ This demo shows how to use Oracle SecureFiles deduplication with bank-statement 
 - [SecureFiles Documentation](https://docs.oracle.com/en/database/oracle/oracle-database/19/adlob/using-oracle-LOBs-storage.html)
 - [SecureFiles Deduplication Examples](https://docs.oracle.com/en/database/oracle/oracle-database/26/adlob/creating-new-LOB-column.html)
 
-## Demo Overview
+## Overview
 
-This script creates two SecureFiles tables with the same data: one keeps duplicates, one deduplicates them, then compares LOB segment storage using `DBMS_SECUREFILES.GET_LOB_DEDUPLICATION_RATIO`.
+The first script,  basic_deduplication.sql,  creates two SecureFiles tables with the same data: one keeps duplicates, one deduplicates them, then compares LOB segment storage using `DBMS_SECUREFILES.GET_LOB_DEDUPLICATION_RATIO`.
 
-The extended demo uses generated bank-statement PDFs to show a more realistic pattern:
+The second script, bank_pdfs_deduplication.sql,   uses generated bank-statement PDFs to show a more realistic pattern:
 
 - Multiple exact copies of the same PDF statement are stored for different business purposes.
 - A `KEEP_DUPLICATES` table stores every PDF copy separately.
 - A `DEDUPLICATE` table stores duplicate SecureFiles LOB content once.
 - Segment allocation is compared to show the actual storage savings.
 
+The third and fourth scripts showcase how to implement a monthly archiving policy using external partition tables in  external partitions on  OCI Object Storage
 ## Files
 
 - `basic_deduplication.sql`  
