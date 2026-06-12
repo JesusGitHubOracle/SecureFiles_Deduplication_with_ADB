@@ -59,7 +59,10 @@ lob (payload) store as securefile (
 );
 
 prompt Insert identical large CLOBs into both tables...
-
+/*
+ Oracle generates 1000 rows from the single row in p. The CLOB data is identical for all rows, which allows us to see the effect of deduplication in the second table.
+ The "payload" CLOB is approximately 131 KB in size (4 * 32,767 bytes) and is repeated 1000 times, resulting in about 131 MB of logical LOB data for each table.
+*/
 insert into sf_keep_duplicates (id, payload)
 with p as (
   select
@@ -72,6 +75,7 @@ with p as (
 select level, p.payload
 from p
 connect by level <= 1000;
+
 
 insert into sf_deduplicate (id, payload)
 with p as (
@@ -89,7 +93,10 @@ connect by level <= 1000;
 commit;
 
 prompt Show LOB settings...
---  The "deduplication" column indicates whether deduplication is enabled for the LOB column. The "securefile" column indicates that the LOB is stored as a SecureFile.
+/*
+ The "deduplication" column indicates whether deduplication is enabled for the LOB column. 
+ The "securefile" column indicates that the LOB is stored as a SecureFile.
+ */
 
 column table_name format a25
 column column_name format a20
@@ -117,14 +124,21 @@ TABLE_NAME                COLUMN_NAME          SEGMENT_NAME                     
 SF_DEDUPLICATE            PAYLOAD              SYS_LOB0000264930C00002$$           YES        LOB             NO          
 SF_KEEP_DUPLICATES        PAYLOAD              SYS_LOB0000264926C00002$$           YES        NO              NO          
 
-
 */
 
 
 
 
-
 prompt Compare LOB segment allocation...
+/*
+Compare LOB segment allocation...
+
+The USER_SEGMENTS comparison measures allocated LOB segment space. This
+includes SecureFiles metadata, extent allocation, LOB index/locator structures,
+and other storage overhead, so the observed allocated-space ratio is lower.
+The "mb" column shows the size of the LOB segment in megabytes, 
+which should be significantly smaller for the deduplicated table compared to the non-deduplicated table.
+*/
 
 column segment_name format a35
 column mb format 999,999,990.00
@@ -134,24 +148,26 @@ select l.table_name,
        s.segment_name,
        s.segment_type,
        round(s.bytes / 1024 / 1024, 2) as mb
-from user_lobs l
-join user_segments s
+  from user_lobs l
+  join user_segments s
   on s.segment_name = l.segment_name
 where l.table_name in ('SF_KEEP_DUPLICATES', 'SF_DEDUPLICATE')
 order by l.table_name;
 
 /*
-Compare LOB segment allocation...
 TABLE_NAME                DEDUPLICATION   SEGMENT_NAME                        SEGMENT_TYPE                    MB
 ------------------------- --------------- ----------------------------------- ------------------ ---------------
 SF_DEDUPLICATE            LOB             SYS_LOB0000264930C00002$$           LOBSEGMENT                    1.25
 SF_KEEP_DUPLICATES        NO              SYS_LOB0000264926C00002$$           LOBSEGMENT                  288.25
-
 */
 
 
 prompt Validate row counts and logical CLOB sizes are the same...
-
+/*
+The "rows_inserted" column confirms that both tables have the same number of rows (1000),
+and the "min_lob_length" and "max_lob_length" columns confirm that the logical size of the CLOB data is the same
+for both tables (approximately 131 KB per row).
+*/
 select 'SF_KEEP_DUPLICATES' as table_name,
        count(*) as rows_inserted,
        min(dbms_lob.getlength(payload)) as min_lob_length,
@@ -163,7 +179,8 @@ select 'SF_DEDUPLICATE',
        min(dbms_lob.getlength(payload)),
        max(dbms_lob.getlength(payload))
 from sf_deduplicate;
-/*
+
+/* sample output:
 TABLE_NAME                ROWS_INSERTED MIN_LOB_LENGTH MAX_LOB_LENGTH
 ------------------------- ------------- -------------- --------------
 SF_KEEP_DUPLICATES                 1000         131068         131068
@@ -171,16 +188,16 @@ SF_DEDUPLICATE                     1000         131068         131068
 */
 
 
-/* show approximate deduplication opportunity using dbms_securefiles.get_lob_deduplication_ratio function
-This function estimates the deduplication ratio for a given LOB column. 
-The function takes the tablespace name, schema name, table name, column name, and optional
-dbms_securefiles.get_lob_deduplication_ratio
-*/
-
-
-
 prompt Optional: show approximate deduplication ratio.
+/* 
+Note:
+DBMS_SECUREFILES.GET_LOB_DEDUPLICATION_RATIO estimates duplicate-content
+opportunity. It is not the same as the actual allocated segment-space ratio.
 
+In this  example, 1000 identical CLOBs produce an estimated deduplication ratio of 1000:1.
+This means that logically, the 1000 identical CLOBs could be stored as 1 unique CLOB, resulting in a 1000:1 logical-to-deduplicated storage ratio for the sampled LOBs.
+The actual allocated segment ratio is lower, about 230:1, because database segments still have metadata and allocation overhead.
+*/
 declare
   l_tablespace_name user_lobs.tablespace_name%type;
   l_dedup_ratio     number;
@@ -206,12 +223,9 @@ begin
   dbms_output.put_line('Function return value: ' || l_return_value);
 end;
 /
-/*
 
-Optional: show approximate deduplication opportunity.
-Estimated deduplication ratio: 1000
-
-1000:1 logical-to-deduplicated storage ratio for the sampled LOBs.
+/* sample output:
+ Estimated deduplication ratio: 1000
+ 1000:1 logical-to-deduplicated storage ratio for the sampled LOBs.
  1000 identical copies / 1 stored copy
-
 */
