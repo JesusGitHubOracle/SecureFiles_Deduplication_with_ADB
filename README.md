@@ -1,6 +1,6 @@
 # SecureFiles Deduplication with Oracle Autonomous Database
 
-This repository showcases Oracle SecureFiles deduplication in Oracle Autonomous Database. It also shows how to store unstructured data on external partitions for query offload and archiving.
+This repository showcases Oracle SecureFiles deduplication in Oracle Autonomous Database. It also shows how to store unstructured data on external partitions for query offload and archiving.  
 
 ## References
 
@@ -8,6 +8,7 @@ This repository showcases Oracle SecureFiles deduplication in Oracle Autonomous 
 - [SecureFiles Documentation](https://docs.oracle.com/en/database/oracle/oracle-database/19/adlob/using-oracle-LOBs-storage.html)
 - [SecureFiles Deduplication Examples](https://docs.oracle.com/en/database/oracle/oracle-database/26/adlob/creating-new-LOB-column.html)
 - [Query Hybrid Partitioned Data](https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/query-hybrid-partition.html)
+- [Oracle AI Vector Search User’s Guide](https://docs.oracle.com/en/database/oracle/oracle-database/26/vecse/)
 
 ## Overview
 
@@ -121,3 +122,77 @@ The archive script writes PDFs and manifest files to OCI Object Storage, then re
 - External Object Storage partitions store metadata and object URIs, not database SecureFiles BLOBs.
 - Raw PDFs in Object Storage are not directly queryable as table rows; the demo uses CSV manifests to represent Object Storage PDFs in the hybrid metadata table.
 - Always verify archived Object Storage files and manifest row counts before purging the internal SecureFiles partition.
+
+## Oracle AI Vector Search Extension
+
+The SecureFiles demo can be extended with Oracle AI Vector Search over the PDFs already loaded into `BANK_PDF_DEDUPLICATE`. This adds semantic search on top of the storage demo: SecureFiles remains the source of truth for the PDF bytes, while extracted text chunks and vector embeddings make the statement content searchable by meaning.
+
+The Vector Search flow is:
+
+1. Extract text from `BANK_PDF_DEDUPLICATE.PDF_DOCUMENT`.
+2. Split each statement into searchable text chunks.
+3. Store the chunks in `BANK_PDF_VECTOR_CHUNKS`.
+4. Load or verify an ONNX embedding model such as `ALL_MINILM_L12_V2`.
+5. Generate database `VECTOR` embeddings in `BANK_PDF_VECTOR_EMBEDDINGS`.
+6. Create a vector index for cosine similarity search.
+7. Run natural-language searches over the bank statement content.
+
+A PDF extraction pipeline is the step that turns stored PDF bytes into clean text that can be searched or embedded. In production this may include PDF parsing, OCR for scanned documents, text cleanup, metadata capture, and chunking. In this demo, `prepare_bank_pdf_vector_chunks.py` performs the extraction and chunk loading step.
+
+Install the Python dependencies if needed:
+
+```bash
+python3 -m pip install oracledb pypdf
+```
+
+Prepare vector chunks:
+
+```bash
+python3 prepare_bank_pdf_vector_chunks.py --recreate
+```
+
+For a smaller smoke test:
+
+```bash
+python3 prepare_bank_pdf_vector_chunks.py --recreate --limit 25
+```
+
+Load the ONNX embedding model from Object Storage, if it is not already registered in the schema:
+
+```sql
+@load_all_minilm_model_from_par.sql
+```
+
+Then generate embeddings and create the vector index:
+
+```sql
+define EMBEDDING_MODEL = ALL_MINILM_L12_V2
+@bank_pdf_vector_search_setup.sql
+```
+
+Run a semantic search:
+
+```bash
+python3 run_bank_pdf_vector_search.py \
+  "fraud prevention and suspicious card activity" \
+  --top-k 5 \
+  --snippet-chars 800
+```
+
+Other useful demo prompts:
+
+```bash
+python3 run_bank_pdf_vector_search.py \
+  "monthly maintenance ATM wire transfer and statement copy fees" \
+  --top-k 5
+
+python3 run_bank_pdf_vector_search.py \
+  "electronic funds transfer error resolution and provisional credit" \
+  --top-k 5
+
+python3 run_bank_pdf_vector_search.py \
+  "card purchases merchant transaction detail" \
+  --top-k 5
+```
+
+The search result includes the statement id, copy role, account number, statement month, file name, chunk number, vector distance, and a relevant snippet. The chunk number is the sequential text chunk within that statement copy; it is not a page number.
