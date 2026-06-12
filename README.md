@@ -1,6 +1,6 @@
-# SecureFiles Deduplication with Oracle Autonomous Database
+# Oracle SecureFiles and AI Vector Search with Oracle Autonomous Database
 
-This repository showcases Oracle SecureFiles deduplication in Oracle Autonomous Database. It also shows how to store unstructured data on external partitions for query offload and archiving.  
+This repository showcases Oracle SecureFiles deduplication along with AI vector Search in Oracle Autonomous Database. It also shows how to store unstructured data on external partitions for query offload and archiving.  
 
 ## References
 
@@ -123,9 +123,9 @@ The archive script writes PDFs and manifest files to OCI Object Storage, then re
 - Raw PDFs in Object Storage are not directly queryable as table rows; the demo uses CSV manifests to represent Object Storage PDFs in the hybrid metadata table.
 - Always verify archived Object Storage files and manifest row counts before purging the internal SecureFiles partition.
 
-## Oracle AI Vector Search Extension
+## Oracle AI Vector Search
 
-The SecureFiles demo can be extended with Oracle AI Vector Search over the PDFs already loaded into `BANK_PDF_DEDUPLICATE`. This adds semantic search on top of the storage demo: SecureFiles remains the source of truth for the PDF bytes, while extracted text chunks and vector embeddings make the statement content searchable by meaning.
+Oracle AI Vector Search can be easily used over the PDFs already loaded into `BANK_PDF_DEDUPLICATE`. This adds semantic search on top of the optinized storage: SecureFiles remains the source of truth for the PDF bytes, while extracted text chunks and vector embeddings make the statement content searchable by meaning.
 
 The Vector Search flow is:
 
