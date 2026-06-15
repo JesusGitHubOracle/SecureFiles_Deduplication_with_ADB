@@ -2,7 +2,7 @@
 
 This repository demonstrates how Oracle Autonomous Database can be used as a complete platform for storing, optimizing, archiving, and searching unstructured content.
 
-The scripts follow the lifecycle of fictitious bank statement PDF documents through several stages:
+The scripts follow the lifecycle of fictitious bank statement PDFs through several stages:
 
 1. Store documents as Oracle SecureFiles BLOBs.
 2. Reduce storage consumption using SecureFiles Deduplication.
