@@ -1,61 +1,99 @@
-# Oracle SecureFiles and AI Vector Search with Oracle Autonomous Database
+# Oracle SecureFiles, Hybrid Partitioning, and AI Vector Search with Autonomous Database
 
-This repository showcases Oracle SecureFiles deduplication along with AI vector Search in Oracle Autonomous Database. It also shows how to store unstructured data on external partitions for query offload and archiving.  
+This repository demonstrates how Oracle Autonomous Database can be used as a complete platform for storing, optimizing, archiving, and searching unstructured content.
 
-## References
+The scripts follow the lifecycle of bank statement PDF documents through several stages:
 
-- [Overview of Oracle SecureFiles](https://www.oracle.com/database/technologies/securefiles.html)
-- [SecureFiles Documentation](https://docs.oracle.com/en/database/oracle/oracle-database/19/adlob/using-oracle-LOBs-storage.html)
-- [SecureFiles Deduplication Examples](https://docs.oracle.com/en/database/oracle/oracle-database/26/adlob/creating-new-LOB-column.html)
-- [Query Hybrid Partitioned Data](https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/query-hybrid-partition.html)
-- [Oracle AI Vector Search User’s Guide](https://docs.oracle.com/en/database/oracle/oracle-database/26/vecse/)
+1. Store documents as Oracle SecureFiles BLOBs.
+2. Reduce storage consumption using SecureFiles Deduplication.
+3. Archive historical content to OCI Object Storage using Hybrid Partitioned Tables.
+4. Enable semantic document retrieval using Oracle AI Vector Search.
 
-## Overview
+The result is a modern architecture that combines secure document storage, storage optimization, lifecycle management, and AI-powered search within a single database platform.
 
-The first script, `basic_deduplication.sql`, creates two SecureFiles tables with the same data: one keeps duplicates, one deduplicates them, then compares LOB segment storage.
+## Stage 1 – Basic SecureFiles Deduplication  
 
-The second script, `bank_pdfs_deduplication.sql`, uses generated bank-statement PDFs to show a more realistic pattern:
+Demonstrates SecureFiles deduplication using synthetic CLOB data. Two identical SecureFiles tables are created:
 
-- Multiple exact copies of the same PDF statement are stored for different business purposes.
-- A `KEEP_DUPLICATES` table stores every PDF copy separately.
-- A `DEDUPLICATE` table stores duplicate SecureFiles LOB content once.
-- Segment allocation is compared to show the actual storage savings.
+* KEEP_DUPLICATES
+* DEDUPLICATE
 
-The third script, `create_hybrid_bank_statement_table.sql`, creates a hybrid partitioned metadata table with cold monthly partitions in OCI Object Storage and a current-month internal SecureFiles BLOB table.
+The script compares physical storage consumption and demonstrates the maximum potential storage savings.
+  
+## Stage 2 – Realistic PDF Deduplication  
 
-The fourth script, `archive_current_partition_to_object_storage.sql`, archives the current internal month to Object Storage and rebuilds the hybrid table so the archived month becomes an external partition.
+Demonstrates deduplication using bank statement PDFs. Multiple copies of the same data are stored for different business purposes:
 
-## Files
+* Customer access
+* Compliance retention
+* Customer support
+* Archival copies
 
-- `basic_deduplication.sql`  
-  Minimal SecureFiles deduplication example using synthetic LOB data.
+The demo compares storage allocation with and without deduplication enabled.  
 
-- `generate_bank_pdfs.py`  
-  Generates valid synthetic PDF bank statements outside the database.
+## Stage 3 – Hybrid Partitioned Tables and Archive Historical Data
 
-- `load_bank_pdfs_to_adb.py`  
-  Loads generated PDFs into Autonomous Database SecureFiles BLOB tables.
+Introduces Information Lifecycle Management.
 
-- `bank_pdfs_deduplication.sql`  
-  SQL-only demo using PDF-like BLOB payloads.
+Recent statements remain inside the database as SecureFiles BLOBs. Historical statements are represented through external partitions stored in OCI Object Storage. Applications continue querying a single logical dataset.
 
-- `create_hybrid_bank_statement_table.sql`  
-  Creates a hybrid partitioned metadata table for cold Object Storage partitions and a current-month internal SecureFiles BLOB table with deduplication.
+Movement of data from SecureFiles storage into OCI Object Storage is as follows:
 
-- `archive_current_partition_to_object_storage.sql`  
-  Archives the current internal partition to Object Storage and rebuilds the hybrid table so the archived month becomes external.
+* Exports PDF documents
+* Uploads files to Object Storage
+* Generates manifest files
+* Converts archived months into external partitions
 
-## Architecture
+This reduces database storage requirements while preserving transparent access.
 
-The hybrid partitioned table demo uses a split design because Autonomous Database hybrid partitioned tables do not support `BLOB` columns.
+## Stage 4 – AI Vector Search  
 
-- Cold months are represented in a hybrid partitioned metadata table.
-- Cold PDF bytes live in OCI Object Storage.
-- Current-month PDF bytes live in an internal SecureFiles BLOB table.
-- The current-month BLOB table uses SecureFiles `DEDUPLICATE`.
-- A view provides a common query shape for metadata and current BLOB access.
+Demonstrates semantic search over the stored PDF documents.
 
-## Generate PDFs
+The process includes:
+
+* PDF text extraction
+* Text chunking
+* Embedding generation
+* Vector indexing
+* Natural-language search
+
+## Example Queries
+
+```bash
+python3 run_bank_pdf_vector_search.py \
+  "fraud prevention and suspicious card activity"
+```
+
+```bash
+python3 run_bank_pdf_vector_search.py \
+  "electronic funds transfer error resolution"
+```
+
+```bash
+python3 run_bank_pdf_vector_search.py \
+  "monthly maintenance fees and wire transfer charges"
+```
+
+---
+
+## Installation
+
+### Python Dependencies
+
+```bash
+python3 -m pip install oracledb
+```
+
+For PDF extraction:
+
+```bash
+python3 -m pip install pypdf
+```
+
+---
+
+### Generate Sample PDFs
 
 ```bash
 python3 generate_bank_pdfs.py \
@@ -64,19 +102,13 @@ python3 generate_bank_pdfs.py \
   --out-dir generated_bank_pdfs
 ```
 
-## Load PDFs into Autonomous Database
+---
 
-Install the Python driver if needed:
-
-```bash
-python3 -m pip install oracledb
-```
-
-Example TLS connection:
+### Load PDFs into Autonomous Database
 
 ```bash
 python3 load_bank_pdfs_to_adb.py \
-  --dsn '<your-adb-tls-connect-descriptor>' \
+  --dsn '<adb-connect-descriptor>' \
   --user '<db-user>' \
   --input-dir generated_bank_pdfs \
   --recreate \
@@ -84,115 +116,56 @@ python3 load_bank_pdfs_to_adb.py \
   --tls-insecure-skip-verify
 ```
 
-For production usage, configure certificate validation instead of using `--tls-insecure-skip-verify`.
+---
 
-## Expected Deduplication Result
+### Run the Deduplication Demo
 
-With three stored copies per generated statement, the SecureFiles deduplication ratio should usually be close to `3:1`, with some overhead from LOB metadata and extent allocation.
-
-Example result from the demo:
-
-```text
-KEEP_DUPLICATES allocated MB: 40.31
-DEDUPLICATE allocated MB: 16.25
-Actual dedup ratio: 2.48
+```sql
+@basic_deduplication.sql
 ```
 
-This means the deduplicated table used significantly less allocated LOB segment space while preserving the same logical PDF documents.
+```sql
+@bank_pdfs_deduplication.sql
+```
 
-## Hybrid Partitioned Table Flow
+---
 
-Create the hybrid metadata table and current SecureFiles table:
+### Run the Hybrid Partitioning Demo
 
 ```sql
 @create_hybrid_bank_statement_table.sql
 ```
 
-Archive the current internal partition to Object Storage:
-
 ```sql
 @archive_current_partition_to_object_storage.sql
 ```
 
-The archive script writes PDFs and manifest files to OCI Object Storage, then rebuilds the hybrid metadata table so the archived month is external and the next month becomes the current internal partition.
+---
 
-## Notes
+### Run the Vector Search Demo
 
-- SecureFiles deduplication applies to SecureFiles LOBs stored inside the database.
-- External Object Storage partitions store metadata and object URIs, not database SecureFiles BLOBs.
-- Raw PDFs in Object Storage are not directly queryable as table rows; the demo uses CSV manifests to represent Object Storage PDFs in the hybrid metadata table.
-- Always verify archived Object Storage files and manifest row counts before purging the internal SecureFiles partition.
-
-## Oracle AI Vector Search
-
-Oracle AI Vector Search can be easily used over the PDFs already loaded into `BANK_PDF_DEDUPLICATE`. This adds semantic search on top of the optinized storage: SecureFiles remains the source of truth for the PDF bytes, while extracted text chunks and vector embeddings make the statement content searchable by meaning.
-
-The Vector Search flow is:
-
-1. Extract text from `BANK_PDF_DEDUPLICATE.PDF_DOCUMENT`.
-2. Split each statement into searchable text chunks.
-3. Store the chunks in `BANK_PDF_VECTOR_CHUNKS`.
-4. Load or verify an ONNX embedding model such as `ALL_MINILM_L12_V2`.
-5. Generate database `VECTOR` embeddings in `BANK_PDF_VECTOR_EMBEDDINGS`.
-6. Create a vector index for cosine similarity search.
-7. Run natural-language searches over the bank statement content.
-
-A PDF extraction pipeline is the step that turns stored PDF bytes into clean text that can be searched or embedded. In production this may include PDF parsing, OCR for scanned documents, text cleanup, metadata capture, and chunking. In this demo, `prepare_bank_pdf_vector_chunks.py` performs the extraction and chunk loading step.
-
-Install the Python dependencies if needed:
-
-```bash
-python3 -m pip install oracledb pypdf
-```
-
-Prepare vector chunks:
+Prepare chunks:
 
 ```bash
 python3 prepare_bank_pdf_vector_chunks.py --recreate
 ```
 
-For a smaller smoke test:
-
-```bash
-python3 prepare_bank_pdf_vector_chunks.py --recreate --limit 25
-```
-
-Load the ONNX embedding model from Object Storage, if it is not already registered in the schema:
+Load the embedding model:
 
 ```sql
 @load_all_minilm_model_from_par.sql
 ```
 
-Then generate embeddings and create the vector index:
+Create embeddings and vector indexes:
 
 ```sql
 define EMBEDDING_MODEL = ALL_MINILM_L12_V2
 @bank_pdf_vector_search_setup.sql
 ```
 
-Run a semantic search:
+Run semantic searches:
 
 ```bash
 python3 run_bank_pdf_vector_search.py \
-  "fraud prevention and suspicious card activity" \
-  --top-k 5 \
-  --snippet-chars 800
+  "fraud prevention and suspicious card activity"
 ```
-
-Other useful demo prompts:
-
-```bash
-python3 run_bank_pdf_vector_search.py \
-  "monthly maintenance ATM wire transfer and statement copy fees" \
-  --top-k 5
-
-python3 run_bank_pdf_vector_search.py \
-  "electronic funds transfer error resolution and provisional credit" \
-  --top-k 5
-
-python3 run_bank_pdf_vector_search.py \
-  "card purchases merchant transaction detail" \
-  --top-k 5
-```
-
-The search result includes the statement id, copy role, account number, statement month, file name, chunk number, vector distance, and a relevant snippet. The chunk number is the sequential text chunk within that statement copy; it is not a page number.
