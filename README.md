@@ -26,8 +26,8 @@ Together these technologies create a complete platform for managing, archiving, 
 
 Demonstrates SecureFiles deduplication using synthetic CLOB data. Two identical SecureFiles tables are created:
 
-* KEEP_DUPLICATES
-* DEDUPLICATE
+- KEEP_DUPLICATES
+- DEDUPLICATE
 
 The script compares physical storage consumption and demonstrates the maximum potential storage savings.
   
@@ -35,10 +35,10 @@ The script compares physical storage consumption and demonstrates the maximum po
 
 Demonstrates deduplication using bank statement PDFs. Multiple copies of the same PDF statement are stored for different business purposes:
 
-* Customer access
-* Compliance retention
-* Customer support
-* Archival copies
+- Customer access
+- Compliance retention
+- Customer support
+- Archival copies
 
 The demo compares storage allocation with and without deduplication enabled.  
 
@@ -50,10 +50,10 @@ Recent statements remain inside the database as SecureFiles BLOBs, while histori
 
 The archive process performs the following steps:
 
-* Exports PDF documents
-* Uploads files to Object Storage
-* Generates manifest files
-* Converts archived months into external partitions
+- Exports PDF documents
+- Uploads files to Object Storage
+- Generates manifest files
+- Converts archived months into external partitions
 
 This reduces database storage requirements while preserving transparent access.
 
@@ -63,11 +63,11 @@ Demonstrates semantic search over the stored PDF documents.
 
 The process includes:
 
-* PDF text extraction
-* Text chunking
-* Embedding generation
-* Vector indexing
-* Natural-language search
+- PDF text extraction
+- Text chunking
+- Embedding generation
+- Vector indexing
+- Natural-language search
 
 Oracle AI Vector Search allows users to search document content by meaning rather than exact keywords, providing a more natural and effective search experience.
 
@@ -93,7 +93,7 @@ python3 run_bank_pdf_vector_search.py \
 ## Repository Contents
 
 | Script | Description |
-|----------|-------------|
+| --- | --- |
 | basic_deduplication.sql | Demonstrates SecureFiles deduplication using synthetic CLOB data. |
 | generate_bank_pdfs.py | Generates sample bank statement PDFs with configurable duplication levels. |
 | load_bank_pdfs_to_adb.py | Loads generated PDFs into SecureFiles BLOB tables in Autonomous Database. |
@@ -200,14 +200,10 @@ python3 run_bank_pdf_vector_search.py \
 
 ## References
 
-- Oracle SecureFiles Overview
-  https://www.oracle.com/database/technologies/securefiles.html
+- [Oracle SecureFiles Overview](https://www.oracle.com/database/technologies/securefiles.html)
 
-- SecureFiles Documentation
-  https://docs.oracle.com/en/database/oracle/oracle-database/19/adlob/
+- [SecureFiles Documentation](https://docs.oracle.com/en/database/oracle/oracle-database/19/adlob/)
 
-- Hybrid Partitioned Tables
-  https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/query-hybrid-partition.html
+- [Hybrid Partitioned Tables](https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/query-hybrid-partition.html)
 
-- Oracle AI Vector Search User Guide
-  https://docs.oracle.com/en/database/oracle/oracle-database/26/vecse/
+- [Oracle AI Vector Search User Guide](https://docs.oracle.com/en/database/oracle/oracle-database/26/vecse/)
