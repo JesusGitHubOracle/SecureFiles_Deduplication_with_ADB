@@ -2,7 +2,7 @@
 
 This repository demonstrates how Oracle Autonomous Database can be used as a complete platform for storing, optimizing, archiving, and searching unstructured content.
 
-The scripts follow the lifecycle of bank statement PDF documents through several stages:
+The scripts follow the lifecycle of fictitious bank statement PDF documents through several stages:
 
 1. Store documents as Oracle SecureFiles BLOBs.
 2. Reduce storage consumption using SecureFiles Deduplication.
@@ -10,6 +10,17 @@ The scripts follow the lifecycle of bank statement PDF documents through several
 4. Enable semantic document retrieval using Oracle AI Vector Search.
 
 The result is a modern architecture that combines secure document storage, storage optimization, lifecycle management, and AI-powered search within a single database platform.
+
+## Architecture Overview
+
+The demonstration combines four Oracle technologies:
+
+- Oracle SecureFiles for document storage
+- SecureFiles Deduplication for storage optimization
+- Hybrid Partitioned Tables for lifecycle management and archiving
+- Oracle AI Vector Search for semantic document retrieval
+
+Together these technologies create a complete platform for managing, archiving, and searching large collections of unstructured content.
 
 ## Stage 1 – Basic SecureFiles Deduplication  
 
@@ -22,7 +33,7 @@ The script compares physical storage consumption and demonstrates the maximum po
   
 ## Stage 2 – Realistic PDF Deduplication  
 
-Demonstrates deduplication using bank statement PDFs. Multiple copies of the same data are stored for different business purposes:
+Demonstrates deduplication using bank statement PDFs. Multiple copies of the same PDF statement are stored for different business purposes:
 
 * Customer access
 * Compliance retention
@@ -35,9 +46,9 @@ The demo compares storage allocation with and without deduplication enabled.
 
 Introduces Information Lifecycle Management.
 
-Recent statements remain inside the database as SecureFiles BLOBs. Historical statements are represented through external partitions stored in OCI Object Storage. Applications continue querying a single logical dataset.
+Recent statements remain inside the database as SecureFiles BLOBs, while historical statements are archived to OCI Object Storage using Hybrid Partitioned Tables. Applications continue querying a single logical dataset without needing to know where the data is physically stored.
 
-Movement of data from SecureFiles storage into OCI Object Storage is as follows:
+The archive process performs the following steps:
 
 * Exports PDF documents
 * Uploads files to Object Storage
@@ -58,6 +69,8 @@ The process includes:
 * Vector indexing
 * Natural-language search
 
+Oracle AI Vector Search allows users to search document content by meaning rather than exact keywords, providing a more natural and effective search experience.
+
 ## Example Queries
 
 ```bash
@@ -76,6 +89,21 @@ python3 run_bank_pdf_vector_search.py \
 ```
 
 ---
+
+## Repository Contents
+
+| Script | Description |
+|----------|-------------|
+| basic_deduplication.sql | Demonstrates SecureFiles deduplication using synthetic CLOB data. |
+| generate_bank_pdfs.py | Generates sample bank statement PDFs with configurable duplication levels. |
+| load_bank_pdfs_to_adb.py | Loads generated PDFs into SecureFiles BLOB tables in Autonomous Database. |
+| bank_pdfs_deduplication.sql | Demonstrates SecureFiles deduplication using realistic PDF workloads. |
+| create_hybrid_bank_statement_table.sql | Creates a Hybrid Partitioned Table architecture for active and archived statements. |
+| archive_current_partition_to_object_storage.sql | Archives SecureFiles PDFs to OCI Object Storage and converts partitions to external storage. |
+| prepare_bank_pdf_vector_chunks.py | Extracts PDF text and loads searchable chunks into the database. |
+| load_all_minilm_model_from_par.sql | Registers the MiniLM embedding model in Oracle Database. |
+| bank_pdf_vector_search_setup.sql | Generates vector embeddings and creates vector indexes. |
+| run_bank_pdf_vector_search.py | Executes semantic searches against bank statement content. |
 
 ## Installation
 
@@ -169,3 +197,17 @@ Run semantic searches:
 python3 run_bank_pdf_vector_search.py \
   "fraud prevention and suspicious card activity"
 ```
+
+## References
+
+- Oracle SecureFiles Overview
+  https://www.oracle.com/database/technologies/securefiles.html
+
+- SecureFiles Documentation
+  https://docs.oracle.com/en/database/oracle/oracle-database/19/adlob/
+
+- Hybrid Partitioned Tables
+  https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/query-hybrid-partition.html
+
+- Oracle AI Vector Search User Guide
+  https://docs.oracle.com/en/database/oracle/oracle-database/26/vecse/
